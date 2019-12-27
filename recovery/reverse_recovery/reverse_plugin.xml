@@ -1,0 +1,7 @@
+<library path="lib/libreverse_recovery">
+  <class name="reverse_recovery/ReverseRecovery" type="reverse_recovery::ReverseRecovery" base_class_type="nav_core::RecoveryBehavior">
+    <description>
+      reverse and try to get unstuck
+    </description>
+  </class>
+</library>
