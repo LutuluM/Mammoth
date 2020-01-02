@@ -138,6 +138,8 @@ target_link_libraries(fake_laser_node ${catkin_LIBRARIES} )
 add_executable(transform_publisher_node src/transform_publisher.cpp)
 target_link_libraries(transform_publisher_node ${catkin_LIBRARIES} )
 
+add_executable(map_reader_node src/map_reader.cpp)
+target_link_libraries(map_reader_node ${catkin_LIBRARIES} )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}

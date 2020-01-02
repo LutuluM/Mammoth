@@ -2,8 +2,6 @@
 #include <tf/transform_listener.h>
 #include <tf/transform_datatypes.h>
 #include <geometry_msgs/Pose.h>
-#include <nav_msgs/MapMetaData.h>
-#include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Path.h>
 #include <std_msgs/Int8.h>
 #include <actionlib_msgs/GoalStatusArray.h>
@@ -24,7 +22,6 @@ class waypoint_class{
 		void publishNextWaypoint();
 		void checkPose();
 		void addWaypointCallback(const geometry_msgs::Pose);
-		void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr&);
 		void pathCallback(const nav_msgs::Path::ConstPtr&);
 		void statusCallback(const actionlib_msgs::GoalStatusArray::ConstPtr&);
 		void printPose(geometry_msgs::Pose);
@@ -33,7 +30,7 @@ class waypoint_class{
 		std::deque<waypoint> waypoint_queue;//deque for pushing new waypoints to front of designated path
 		ros::NodeHandle nh;
 		ros::Publisher pose_pub,audio_pub;
-		ros::Subscriber waypoint_sub, map_sub, path_sub,status_sub;
+		ros::Subscriber waypoint_sub, path_sub,status_sub;
 
 		bool running,reached_waypoint;
 
@@ -42,8 +39,7 @@ class waypoint_class{
 		
 		bool check;
 		double lastchecked;
-		int rows,cols;
-		std::vector<std::vector<signed char> > snowMap;
+		
 	public:
 		tf::TransformListener tfListener;
 		waypoint_class(std::string);
@@ -74,7 +70,6 @@ waypoint_class::waypoint_class(std::string filename){
 	pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal",10);
 	audio_pub = nh.advertise<std_msgs::Int8>("/yeti/auditory_feedback",10);
 	waypoint_sub = nh.subscribe<geometry_msgs::Pose>("/yeti/new_waypoints",10,&waypoint_class::addWaypointCallback,this);
-	map_sub = nh.subscribe<nav_msgs::OccupancyGrid>("/map",10, &waypoint_class::mapCallback,this);
 	path_sub = nh.subscribe<nav_msgs::Path>("/move_base/NavfnROS/plan",10, &waypoint_class::pathCallback,this);
 	status_sub = nh.subscribe<actionlib_msgs::GoalStatusArray>("/move_base/status",10, &waypoint_class::statusCallback,this);
 
@@ -233,64 +228,6 @@ void waypoint_class::addWaypoint(geometry_msgs::Pose msgs){
 
 void waypoint_class::addWaypointCallback(const geometry_msgs::Pose msgs){
 	addWaypoint(msgs);
-}
-
-void waypoint_class::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msgs){
-//Manual Recreation/skipping of waypoints if path is determined to have waypoint inside of collision area
-/*std::cout << "------------\n" << "Resolution: " << msgs->info.resolution << " \n"
-		<< "Width: " << msgs->info.width << " \n"
-		<< "Height: " << msgs->info.height << " \n"
-		<< "X: " << msgs->info.origin.position.x << " \n"
-		<< "Y: " << msgs->info.origin.position.y << " \n";*/
-	static bool init = true;
-	//std::cout << "Start Time:" << ros::Time::now() << "\n";
-
-	if(init){//Make Matrix form holding map data
-		//Hard coded because math is off becuase 
-		rows = 300;//15.0 / msgs->info.resolution;
-		cols = 80;//4.0 / msgs->info.resolution;
-		snowMap.resize(rows);
-		for(int i = 0; i< rows; i++)
-			snowMap[i].resize(cols);
-		init = false;
-		std::cout << "Width: " << cols << "Height: " << rows << '\n'; 
-	}
-	
-	//rows is x cols is y
-	/*
-	Map of the Matrix
-	---------------------
-	|x,y                |
-	|                   |
-	|-------------------|
-	|      |     |      |
-	|      |     |      |
-	|      |     |      |
-	|      |     |      |
-	|      |     |      |
-	|      |     |      |
-	|-------------------|
-	|                   |
-	|       Start       |
-	|                0,0|
-	---------------------
-	*/
-	//std::cout << "----OCCUPANCY GRID-----\n";
-	for(int x = 0; x< rows; x++) {
-		for(int y = 0; y < cols; y++) { 
-				snowMap[x][y] = (signed char) msgs->data[4000*(y+1960)+(x+1970)];
-				//std::cout << (signed int)snowMap[x][y] << " "; 
-		}
-		//std::cout << "\n";
-	}
-
-	//std::cout << "Stop Time:" << ros::Time::now() << "\n";
-
-/*
-//run new waypoint
-waypoint_queue.pop_front();
-this->publishNextWaypoint();
-*/
 }
 
 void waypoint_class::pathCallback(const nav_msgs::Path::ConstPtr& msgs){

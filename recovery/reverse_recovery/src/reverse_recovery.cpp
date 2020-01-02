@@ -50,9 +50,9 @@ void ReverseRecovery::runBehavior()
 	ros::Publisher vel_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 	geometry_msgs::Twist cmd_vel;
 	for(int i =0; i<10;i++){//runs for 1 sec
-		cmd_vel.linear.x = -0.1;
+		cmd_vel.linear.x = -0.2;
 		cmd_vel.linear.y = 0.0;
-		cmd_vel.angular.z =0;
+		cmd_vel.angular.z = 0;
 		vel_pub.publish(cmd_vel);
 		r.sleep();
 	}
