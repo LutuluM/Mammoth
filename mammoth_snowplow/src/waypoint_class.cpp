@@ -4,6 +4,7 @@
 #include <geometry_msgs/Pose.h>
 #include <nav_msgs/Path.h>
 #include <std_msgs/Int8.h>
+#include <std_msgs/String.h>
 #include <actionlib_msgs/GoalStatusArray.h>
 
 #include <string>
@@ -26,10 +27,11 @@ class waypoint_class{
 		void statusCallback(const actionlib_msgs::GoalStatusArray::ConstPtr&);
 		void printPose(geometry_msgs::Pose);
 		void tfToPose(tf::StampedTransform,geometry_msgs::Pose&);
+		void finished();
 
 		std::deque<waypoint> waypoint_queue;//deque for pushing new waypoints to front of designated path
 		ros::NodeHandle nh;
-		ros::Publisher pose_pub,audio_pub;
+		ros::Publisher pose_pub,audio_pub,state_pub;
 		ros::Subscriber waypoint_sub, path_sub,status_sub;
 
 		bool running,reached_waypoint;
@@ -39,6 +41,7 @@ class waypoint_class{
 		
 		bool check;
 		double lastchecked;
+		bool finalPoint;
 		signed char overshot;//0 none,1 forward, -1 backwards
 		
 	public:
@@ -70,19 +73,21 @@ waypoint_class::waypoint_class(std::string filename){
 
 	pose_pub = nh.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal",10);
 	audio_pub = nh.advertise<std_msgs::Int8>("/yeti/auditory_feedback",10);
+	state_pub = nh.advertise<std_msgs::String>("/yeti/state/system",10);
 	waypoint_sub = nh.subscribe<geometry_msgs::Pose>("/yeti/new_waypoints",10,&waypoint_class::addWaypointCallback,this);
 	path_sub = nh.subscribe<nav_msgs::Path>("/move_base/NavfnROS/plan",10, &waypoint_class::pathCallback,this);
 	status_sub = nh.subscribe<actionlib_msgs::GoalStatusArray>("/move_base/status",10, &waypoint_class::statusCallback,this);
 
 	bool running = false;
 	reached_waypoint = false;
-	overshot = 0;
 	if(importWaypoints(filename)<0){
 		std::cout << "Error not a valid file\n";
 		exit(-1);
 	}
 	check = false;
 	lastchecked = ros::Time::now().toSec();
+	finalPoint = false;
+	overshot = 0;
 }
 
 int waypoint_class::importWaypoints(std::string filename){
@@ -239,6 +244,9 @@ void waypoint_class::checkPose(){
 			msg.data = 1;
 			audio_pub.publish(msg);
 		}
+		if(waypoint_queue.size() == 1){
+		    finalPoint = true;
+		}
 	}
 }
 
@@ -300,6 +308,31 @@ void waypoint_class::tfToPose(tf::StampedTransform t,geometry_msgs::Pose& p){
 	}
 }
 
+void waypoint_class::finished(){
+	tf::StampedTransform transform;
+	std_msgs::Int8 msg;
+	std_msgs::String state_msg;
+
+	try{
+		tfListener.lookupTransform("/map", "/base_link", ros::Time(0), transform);
+	}
+	catch (tf::TransformException ex){
+		ROS_ERROR("WAYPOINT_PUBLISHER: %s",ex.what());
+		ros::Duration(1.0).sleep();
+		return;
+	}
+	
+	if(transform.getOrigin().getX() < 0.5){
+	    state_msg.data = "kill";
+		state_pub.publish(state_msg);
+		running = false;
+		std::cout << "All Waypoints Completed\n";
+		msg.data = 2;
+		audio_pub.publish(msg);
+		
+	}
+}
+
 void waypoint_class::run(){
 	ros::Rate r(10);//10hz
 	ros::Duration(10).sleep();//Delay for Sub/Pub and Map to Initalize
@@ -310,7 +343,10 @@ void waypoint_class::run(){
 	audio_pub.publish(msg);
 	while(ros::ok() && this->running){
 		ros::spinOnce();
-		this->checkPose();
+		if(finalPoint)
+			this->finished();
+		else
+			this->checkPose();
 		r.sleep();
 	}
 }

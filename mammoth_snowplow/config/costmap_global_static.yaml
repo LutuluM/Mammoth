@@ -4,6 +4,7 @@ publish_frequency: 2
 static_map: true
 rolling_window: false
 track_unknown_space: true
+# allow_unknown: true not tested yet
 
 plugins:
   - {name: obstacles_laser,           type: "costmap_2d::ObstacleLayer"}

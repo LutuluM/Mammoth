@@ -7,7 +7,11 @@ ros::Publisher cmd_out;
 ros::Subscriber cmd_in, rotate_callback;
 
 void subCallback(const std_msgs::Int8::ConstPtr msgs){
-	rotate = msgs->data;
+    geometry_msgs::Twist msgs_out;
+    msgs_out.linear.x = 0;
+    msgs_out.angular.z = 0;
+	if(msgs->data == 2)
+	    cmd_out.publish(msgs_out);
 }
 
 void subVelocity(const geometry_msgs::Twist::ConstPtr msgs){
