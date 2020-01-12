@@ -53,7 +53,8 @@ void map_class::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msgs){
 	//get new points
 	for(int x = 0; x< rows; x++) {
 		for(int y = 0; y < cols; y++) {
-			if((signed char) msgs->data[4000*(y+1960)+(x+1970)] > 1){
+			if((signed char) msgs->data[4000*(y+1960)+(x+1970)] > 1){//based on the default map size
+				//array is mapped to platfield where [0,0] is (-3,-2)
 				pt.x = x*0.05f - 3.0f;
 				pt.y = y*0.05f - 2.0f;
 				foundPoints.push_back(pt);
@@ -74,31 +75,31 @@ void map_class::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msgs){
 
 	//find nearest point
 	if(init){
+		num = 0;
+		for(int i = 0; i< foundPoints.size() ;i++){
+			pt = foundPoints[i];
+			dist = distance(pt,centroids[0]);
 			num = 0;
-			for(int i = 0; i< foundPoints.size() ;i++){
-				pt = foundPoints[i];
-				dist = distance(pt,centroids[0]);
-				num = 0;
-				for(int j = 1; j< num_centroids ;j++){
-					if(dist> distance(pt,centroids[j]))
-						num = j;
-				}
-				pointsForAverage[num].push_back(pt);
+			for(int j = 1; j< num_centroids ;j++){
+				if(dist> distance(pt,centroids[j]))
+					num = j;
 			}
-			//calc new centroids
-			pt.x = 0;
-			pt.y = 0;
-			for(int j = 0; j< num_centroids ;j++){
-				for(int i = 0; i< pointsForAverage[j].size() ;i++){
-					pt.x += pointsForAverage[j][i].x;
-					pt.y += pointsForAverage[j][i].y;
-				}
-				centroids[j].x = pt.x / pointsForAverage[j].size();
-				centroids[j].y = pt.y / pointsForAverage[j].size();
-				pointsForAverage[j].clear();
-				std::cout << "Centroid:" << j << " (" << centroids[j].x << ',' << centroids[j].y << ")\n";
+			pointsForAverage[num].push_back(pt);
+		}
+		//calc new centroids
+		pt.x = 0;
+		pt.y = 0;
+		for(int j = 0; j< num_centroids ;j++){
+			for(int i = 0; i< pointsForAverage[j].size() ;i++){
+				pt.x += pointsForAverage[j][i].x;
+				pt.y += pointsForAverage[j][i].y;
 			}
-			std::cout << "--------------------------------------------\n";
+			centroids[j].x = pt.x / pointsForAverage[j].size();
+			centroids[j].y = pt.y / pointsForAverage[j].size();
+			pointsForAverage[j].clear();
+			std::cout << "Centroid:" << j << " (" << centroids[j].x << ',' << centroids[j].y << ")\n";
+		}
+		std::cout << "--------------------------------------------\n";
 	}
 
 	/*

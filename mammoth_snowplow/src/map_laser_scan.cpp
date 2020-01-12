@@ -54,8 +54,9 @@ int main(int argc, char** argv){
 		x = transform.getOrigin().getX();
 		y = transform.getOrigin().getY();
 
-		//generate Boarder of the I Field
-		yaw += PI;//correct for scan start location
+		//generate Boarder of the I Fielid
+		//for each 'laserscan' point, the minimum distance is taken to each boarder is the point in the laser scan.
+		yaw += PI;//correct for scan start location.
 		for(int i = 0; i < num_points; i++){
 			angle = yaw + stepInRad*i;
 			angle = std::fmod(angle,2*PI)-PI;

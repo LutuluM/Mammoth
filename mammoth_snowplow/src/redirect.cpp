@@ -13,7 +13,12 @@ void subCallback(const std_msgs::Int8::ConstPtr msgs){
 void subVelocity(const geometry_msgs::Twist::ConstPtr msgs){
 	geometry_msgs::Twist mod = *msgs;
 	//if(rotate)mod.linear.x = 0;
-	//mod.angular.z *=2;
+	if(mod.linear.x > .95)
+		mod.linear.x = .95;
+	if(mod.linear.x < -0.95)
+		mod.linear.x = -.95;
+	//if(rotate)mod.linear.x = 0;
+	mod.angular.z *= 1.5;
 	cmd_out.publish(mod);
 }
 
@@ -28,4 +33,3 @@ int main(int argc, char** argv){
 	rotate_callback = nh.subscribe("/yeti/auditory_feedback",1,subCallback);
 	ros::spin();
 }
-

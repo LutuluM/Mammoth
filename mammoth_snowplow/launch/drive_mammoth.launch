@@ -30,12 +30,14 @@
     <remap from="robot_state" to="$(arg state_base)/system" />
 	  <remap from="joystick" to="$(arg input_base)/xinput" />
 	  <remap from="auto_control_vel" to="$(arg actuation_base)/auto_control" />
-    <remap from="control_vel" to="roboteq/motors/wheel_speeds" />
+    <remap from="control_vel" to="$(arg actuation_base)/control" />
     <remap from="drive_mode" to="$(arg state_base)/drive_mode" />
     <include file="$(find robot_state_controller)/launch/drive_mode_switch/switch.launch" />
 
     <!-- Roboteq -->
-    <!--<remap from="motor_control" to="motors/wheel_speeds" />-->
+    <remap from="/roboteq/motors/wheel_speeds" to="$(arg actuation_base)/control2" />
     <include file="$(find isc_roboteq_hdc2460)/launch/starthdc.launch" />
 
+    <!--Speed Cap-->
+    <node pkg="mammoth_snowplow" type="redirect_node" name="redirect_node" output="screen"/>
 </launch>

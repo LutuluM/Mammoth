@@ -39,6 +39,7 @@ class waypoint_class{
 		
 		bool check;
 		double lastchecked;
+		signed char overshot;//0 none,1 forward, -1 backwards
 		
 	public:
 		tf::TransformListener tfListener;
@@ -75,6 +76,7 @@ waypoint_class::waypoint_class(std::string filename){
 
 	bool running = false;
 	reached_waypoint = false;
+	overshot = 0;
 	if(importWaypoints(filename)<0){
 		std::cout << "Error not a valid file\n";
 		exit(-1);
@@ -161,6 +163,11 @@ void waypoint_class::publishNextWaypoint(){
 	msgs.pose.orientation = waypoint_queue.front().pose.orientation;
 	pose_pub.publish(msgs);
 
+	if(target_x<msgs.pose.position.x)//old(current pos) less than current
+		overshot = 1;
+	else
+		overshot = -1;
+	
 	target_x = msgs.pose.position.x;
 	target_y = msgs.pose.position.y;
 	target_qz = msgs.pose.orientation.z;
@@ -200,7 +207,25 @@ void waypoint_class::checkPose(){
 					reached_waypoint = true;
 					check = false;
 				}
-
+				
+	//check for oversooting
+	switch(overshot){
+		case 1: 
+			if(target_x < p.position.x){
+				reached_waypoint = true;
+				check = false;
+			}
+			break;
+		case -1:
+			if(target_x > p.position.x){
+				reached_waypoint = true;
+				check = false;
+			}
+			break;
+		default:break;
+	}
+	
+	
 	if(reached_waypoint){
 		std::cout << "Reached Target Waypoint.\n";
 		reached_waypoint = false;
@@ -242,23 +267,23 @@ void waypoint_class::pathCallback(const nav_msgs::Path::ConstPtr& msgs){
 }
 
 void waypoint_class::statusCallback(const actionlib_msgs::GoalStatusArray::ConstPtr& msgs){//publish next waypoint if waypoint publisher fails to send next one after goal is reached
-std_msgs::Int8 msg;
+	std_msgs::Int8 msg;
 
-if(msgs->status_list.size() > 0)
-	if(msgs->status_list.back().status == 3){
-		if(!check){
-			check = true;
-			lastchecked = ros::Time::now().toSec();
+	if(msgs->status_list.size() > 0)
+		if(msgs->status_list.back().status == 3){
+			if(!check){
+				check = true;
+				lastchecked = ros::Time::now().toSec();
+			}
+			else if(lastchecked < ros::Time::now().toSec() - 5){
+				lastchecked = ros::Time::now().toSec();
+				waypoint_queue.pop_front();
+				publishNextWaypoint();
+				check = false;
+				msg.data = 3;
+				audio_pub.publish(msg);
+			}
 		}
-		else if(lastchecked < ros::Time::now().toSec() - 5){
-			lastchecked = ros::Time::now().toSec();
-			waypoint_queue.pop_front();
-			publishNextWaypoint();
-			check = false;
-			msg.data = 3;
-			audio_pub.publish(msg);
-		}
-	}
 }
 
 void waypoint_class::printPose(geometry_msgs::Pose p){
@@ -277,8 +302,12 @@ void waypoint_class::tfToPose(tf::StampedTransform t,geometry_msgs::Pose& p){
 
 void waypoint_class::run(){
 	ros::Rate r(10);//10hz
-	ros::Duration(10).sleep();//Delay for Sub/Pub to Initalize
+	ros::Duration(10).sleep();//Delay for Sub/Pub and Map to Initalize
+	std_msgs::Int8 msg;
+	
 	this->publishNextWaypoint();
+	msg.data = 1;
+	audio_pub.publish(msg);
 	while(ros::ok() && this->running){
 		ros::spinOnce();
 		this->checkPose();
