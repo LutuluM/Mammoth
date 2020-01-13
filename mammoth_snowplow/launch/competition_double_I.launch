@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+    <include file="$(find mammoth_snowplow)/launch/start_mammoth.launch">
+		<arg name="single_I" value="false"/>
+	</include>
+</launch>

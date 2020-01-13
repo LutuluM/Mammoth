@@ -1,8 +1,5 @@
 <?xml version="1.0"?>
 <launch>
-
-  <arg name="no_static_map" default="false"/>
-
   <arg name="base_global_planner" default="navfn/NavfnROS"/>
   <!--<arg name="base_global_planner" default="carrot_planner/CarrotPlanner"/>-->
   <arg name="base_local_planner" default="dwa_local_planner/DWAPlannerROS"/>
@@ -24,11 +21,6 @@
     <param name="local_costmap/height" value="10.0"/>
 
     <!-- static global costmap, static map provides size -->
-    <rosparam file="$(find mammoth_snowplow)/config/costmap_global_static.yaml" command="load" ns="global_costmap" unless="$(arg no_static_map)"/>
-    
-    <!-- global costmap with laser, for odom_navigation_demo -->
-    <rosparam file="$(find mammoth_snowplow)/config/costmap_global_laser.yaml" command="load" ns="global_costmap" if="$(arg no_static_map)"/>
-    <param name="global_costmap/width" value="100.0" if="$(arg no_static_map)"/>
-    <param name="global_costmap/height" value="100.0" if="$(arg no_static_map)"/>
+    <rosparam file="$(find mammoth_snowplow)/config/costmap_global_static.yaml" command="load" ns="global_costmap"/>
   </node>
 </launch>

@@ -97,6 +97,7 @@ int waypoint_class::importWaypoints(std::string filename){
 	tf::Quaternion quarter;
 	double roll, pitch, yaw;
 
+	std::cout << "Reading from file: " << filename << '\n';
 	std::ifstream waypointFile(filename, std::ifstream::in);
 	std::getline(waypointFile,line); //remove the word line
 	std::cout << line << '\n';
