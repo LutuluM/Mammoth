@@ -168,11 +168,12 @@ void waypoint_class::publishNextWaypoint(){
 	msgs.pose.orientation = waypoint_queue.front().pose.orientation;
 	pose_pub.publish(msgs);
 
-	if(target_x<msgs.pose.position.x)//old(current pos) less than current
-		overshot = 1;
+	if(target_x+0.6<msgs.pose.position.x)//old goal less than current goal
+		overshot = 1;//forward overshoot checking
+	else if(target_x-0.6>msgs.pose.position.x)
+		overshot = -1;//backward overshoot checking
 	else
-		overshot = -1;
-	
+		overshot = 0;//off
 	target_x = msgs.pose.position.x;
 	target_y = msgs.pose.position.y;
 	target_qz = msgs.pose.orientation.z;
